@@ -134,7 +134,7 @@ class Si7013 {
   /// \brief Setup the Si7013
   /// \param	address		I2C address of the Si7013
   /// \returns		true		Setup was successful
-  bool setup(uint8_t address = 0x40);
+  bool setup(TwoWire &wirePort = Wire, uint8_t address = 0x40);
 
   /// \brief Reset the Si7013
   /// \returns		true		Teset was successful
@@ -228,7 +228,7 @@ class Si7013 {
   
 
 private:
-
+	TwoWire *_i2cPort;
   bool _humidityNew = false;	  // New humidity data is ready
   bool _temperatureNew = false;	// New temperature data is ready
   bool _adcNew = false;         // New ADC data is ready

@@ -31,10 +31,11 @@ Si7013::Si7013() {
   _status = STATUS_IDLE;
 }
 
-bool Si7013::setup(uint8_t address) {
+bool Si7013::setup(TwoWire &wirePort, uint8_t address ) {
 #ifdef DEBUG 
 Serial.println("setup()");
 #endif
+  _i2cPort = &wirePort;
   _address = address;
   _humidityNew = false;
   _temperatureNew = false;
@@ -52,9 +53,9 @@ bool Si7013::reset() {
 Serial.println("reset()");
 #endif
   if (getStatus() != STATUS_IDLE) return false;
-  Wire.beginTransmission(_address);
-  Wire.write(CMD_RESET);
-  Wire.endTransmission();
+  _i2cPort->beginTransmission(_address);
+  _i2cPort->write(CMD_RESET);
+  _i2cPort->endTransmission();
   delay(((float)DELAY_RESET) * _delayMultiplier);
 
   //// Read the registers to update the local copy of the registers
@@ -145,18 +146,18 @@ int16_t Si7013::readRegister8(uint8_t reg) {
 
   if (getStatus() == STATUS_IDLE) {
 
-		while (Wire.available() > 0) Wire.read();	// discard any leftover data on the bus
+		while (_i2cPort->available() > 0) _i2cPort->read();	// discard any leftover data on the bus
 
-    Wire.beginTransmission(_address);
-    Wire.write(reg);
-    Wire.endTransmission();
-		Wire.requestFrom(_address, 1);
+    _i2cPort->beginTransmission(_address);
+    _i2cPort->write(reg);
+    _i2cPort->endTransmission();
+		_i2cPort->requestFrom(_address, 1);
     uint32_t start = millis(); // start timeout
     while(millis()-start < _transactionTimeout) {
-			if (Wire.available() == 1) {
+			if (_i2cPort->available() == 1) {
 
 				// ToDo: set local variables from read registers
-				uint8_t regVal = Wire.read();
+				uint8_t regVal = _i2cPort->read();
 				//if (reg == CMD_READ_REGISTER_1) {
 				//	_register1Value = regVal;
 				//}
@@ -223,10 +224,10 @@ bool Si7013::writeRegister8(uint8_t reg, uint8_t value, uint8_t mask) {
   Serial.println(value);
 #endif
 
-  Wire.beginTransmission(_address);
-  Wire.write(reg);
-  Wire.write(value);
-  Wire.endTransmission();
+  _i2cPort->beginTransmission(_address);
+  _i2cPort->write(reg);
+  _i2cPort->write(value);
+  _i2cPort->endTransmission();
 
   //if (reg == CMD_WRITE_REGISTER_1) {
 	 // _register1Value = value;
@@ -396,9 +397,9 @@ Serial.println("STATUS_MEASURING_HUMIDITY");
     _measurementDelay = ((float)_adcDelay) * _delayMultiplier;
   } 
 
-	Wire.beginTransmission(_address);
-	Wire.write(cmd);
-	Wire.endTransmission();
+	_i2cPort->beginTransmission(_address);
+	_i2cPort->write(cmd);
+	_i2cPort->endTransmission();
 	_measureStartTime = millis();
   
   return true;
@@ -412,9 +413,9 @@ bool Si7013::sendCommand(uint8_t cmd) {
 
 	if (getStatus() != STATUS_IDLE) return false;
 
-	Wire.beginTransmission(_address);
-	Wire.write(cmd);
-	Wire.endTransmission();
+	_i2cPort->beginTransmission(_address);
+	_i2cPort->write(cmd);
+	_i2cPort->endTransmission();
 
 	return true;
 }
@@ -449,13 +450,13 @@ float Si7013::getHumidity() {
 	Serial.println("getHumidity()");
 #endif // DEBUG
 	if (getStatus() == STATUS_IDLE) {
-		while (Wire.available() > 0) Wire.read();	// discard any leftover data on the bus
-		Wire.requestFrom(_address, 3);
+		while (_i2cPort->available() > 0) _i2cPort->read();	// discard any leftover data on the bus
+		_i2cPort->requestFrom(_address, 3);
 		uint32_t start = millis(); // start timeout
 		while (millis() - start < _transactionTimeout) {
-			if (Wire.available() == 3) {
-				uint16_t hum = Wire.read() << 8 | Wire.read();
-				uint8_t chxsum = Wire.read();
+			if (_i2cPort->available() == 3) {
+				uint16_t hum = _i2cPort->read() << 8 | _i2cPort->read();
+				uint8_t chxsum = _i2cPort->read();
 				// ToDo: use chxsum
 
 				float humidity = hum;
@@ -477,9 +478,9 @@ float Si7013::getPreviousTemperature() {
 	Serial.println("getPreviousTemperature()");
 #endif // DEBUG
 	if (getStatus() == STATUS_IDLE) {
-		Wire.beginTransmission(_address);
-		Wire.write(CMD_READ_PREVIOUS_TEMPERATURE);
-		uint8_t err = Wire.endTransmission();
+		_i2cPort->beginTransmission(_address);
+		_i2cPort->write(CMD_READ_PREVIOUS_TEMPERATURE);
+		uint8_t err = _i2cPort->endTransmission();
 
 		return getTemperature();
 	}
@@ -491,12 +492,12 @@ float Si7013::getTemperature() {
 	Serial.println("getTemperature()");
 #endif // DEBUG
 	if (getStatus() == STATUS_IDLE) {
-		while (Wire.available() > 0) Wire.read();	// discard any leftover data on the bus
-		Wire.requestFrom(_address, 2);
+		while (_i2cPort->available() > 0) _i2cPort->read();	// discard any leftover data on the bus
+		_i2cPort->requestFrom(_address, 2);
 		uint32_t start = millis(); // start timeout
 		while (millis() - start < _transactionTimeout) {
-			if (Wire.available() == 2) {
-				uint16_t temp = Wire.read() << 8 | Wire.read();
+			if (_i2cPort->available() == 2) {
+				uint16_t temp = _i2cPort->read() << 8 | _i2cPort->read();
 
 				float temperature = temp;
 				temperature *= 175.72;
@@ -518,13 +519,13 @@ float Si7013::getAdc() {
 #endif // DEBUG
 	if (getStatus() == STATUS_IDLE) {
 
-		while (Wire.available() > 0) Wire.read();	// discard any leftover data on the bus
+		while (_i2cPort->available() > 0) _i2cPort->read();	// discard any leftover data on the bus
 
 		uint32_t start = millis(); // start timeout
-		Wire.requestFrom(_address, 2);
+		_i2cPort->requestFrom(_address, 2);
 		while (millis() - start < _transactionTimeout) {
-			if (Wire.available() == 2) {
-				uint16_t analog = Wire.read() << 8 | Wire.read();
+			if (_i2cPort->available() == 2) {
+				uint16_t analog = _i2cPort->read() << 8 | _i2cPort->read();
 
 				_adcNew = false;
 
