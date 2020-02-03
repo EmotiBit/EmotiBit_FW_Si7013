@@ -127,6 +127,23 @@ class Si7013 {
   static const uint8_t REG2_MASK_VOUT =                           0b00000001;
   
   static const uint8_t REG3_MASK_RSVD =                           0b11110000;
+
+	static const uint16_t SI7021_ID1_CMD =													0xFA0F; /**< Read Electronic ID 1st Byte */
+	static const uint16_t SI7021_ID2_CMD =													0xFCC9; /**< Read Electronic ID 2nd Byte */
+
+	/** An enum to represent sensor types **/
+	enum si_sensorType {
+		SI_Engineering_Samples,
+		SI_7013,
+		SI_7020,
+		SI_7021,
+		SI_UNKNOWN,
+	};
+
+	si_sensorType _model;
+
+	uint32_t sernum_a = 0; /**< Serialnum A */
+	uint32_t sernum_b = 0; /**< Serialnum B */
      
   /// \brief Constructor
   Si7013();
@@ -225,6 +242,12 @@ class Si7013 {
   /// \param	mask	Mask to write/change only specific bits (see REGX_MASK_ options)
   /// \returns		true	Register write was successful
   bool writeRegister8(uint8_t reg, uint8_t value, uint8_t mask = 0xAA);
+
+	/// \brief Reads serial number and stores It in sernum_a and sernum_b variable
+	void readSerialNumber();
+
+	/// \brief returns the serial number read with readSerialNumber
+	String getSerialNumber();
   
 
 private:
