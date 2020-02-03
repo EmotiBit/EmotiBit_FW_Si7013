@@ -58,6 +58,15 @@ void setup()
   sensor.changeSetting(Si7013::Settings::ADC_NO_HOLD);
   sensor.startHumidityTempMeasurement();
 
+	sensor.readSerialNumber();
+	Serial.print("Electronic Serial Number: ");
+	Serial.print(sensor.sernum_a);
+	Serial.print(", ");
+	Serial.print(sensor.sernum_b);
+	Serial.print("\n");
+	Serial.print("Model: ");
+	Serial.println(sensor._model);
+
   completeMeasStart = millis();
   loopStart = millis();
 }

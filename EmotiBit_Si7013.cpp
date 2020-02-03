@@ -543,3 +543,84 @@ void Si7013::setTransactionTimeout(uint16_t transactionTimeout) {
 void Si7013::setMeasurementDelayMultiplier(float delayMultiplier) {
 	_delayMultiplier = delayMultiplier;
 }
+
+/*!
+ *  @brief  Reads serial number and stores It in sernum_a and sernum_b variable
+ */
+void Si7013::readSerialNumber() {
+	_i2cPort->beginTransmission(_address);
+	_i2cPort->write((uint8_t)(SI7021_ID1_CMD >> 8));
+	_i2cPort->write((uint8_t)(SI7021_ID1_CMD & 0xFF));
+	_i2cPort->endTransmission();
+
+	bool gotData = false;
+	uint32_t start = millis(); // start timeout
+	while (millis() - start < _transactionTimeout) {
+		if (_i2cPort->requestFrom(_address, 8) == 8) {
+			gotData = true;
+			break;
+		}
+		delay(2);
+	}
+	if (!gotData)
+		return; // error timeout
+
+	sernum_a = _i2cPort->read();
+	_i2cPort->read();
+	sernum_a <<= 8;
+	sernum_a |= _i2cPort->read();
+	_i2cPort->read();
+	sernum_a <<= 8;
+	sernum_a |= _i2cPort->read();
+	_i2cPort->read();
+	sernum_a <<= 8;
+	sernum_a |= _i2cPort->read();
+	_i2cPort->read();
+
+	_i2cPort->beginTransmission(_address);
+	_i2cPort->write((uint8_t)(SI7021_ID2_CMD >> 8));
+	_i2cPort->write((uint8_t)(SI7021_ID2_CMD & 0xFF));
+	_i2cPort->endTransmission();
+
+	gotData = false;
+	start = millis(); // start timeout
+	while (millis() - start < _transactionTimeout) {
+		if (_i2cPort->requestFrom(_address, 8) == 8) {
+			gotData = true;
+			break;
+		}
+		delay(2);
+	}
+	if (!gotData)
+		return; // error timeout
+
+	sernum_b = _i2cPort->read();
+	_i2cPort->read();
+	sernum_b <<= 8;
+	sernum_b |= _i2cPort->read();
+	_i2cPort->read();
+	sernum_b <<= 8;
+	sernum_b |= _i2cPort->read();
+	_i2cPort->read();
+	sernum_b <<= 8;
+	sernum_b |= _i2cPort->read();
+	_i2cPort->read();
+
+	switch (sernum_b >> 24) {
+	case 0:
+	case 0xff:
+		_model = SI_Engineering_Samples;
+		break;
+	case 0x0D:
+		_model = SI_7013;
+		break;
+	case 0x14:
+		_model = SI_7020;
+		break;
+	case 0x15:
+		_model = SI_7021;
+		break;
+	default:
+		_model = SI_UNKNOWN;
+	}
+}
