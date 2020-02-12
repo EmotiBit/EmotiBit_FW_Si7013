@@ -19,6 +19,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
 #include "EmotiBit_Si7013.h"
+#include "wiring_private.h"
 
 #define SerialUSB SERIAL_PORT_USBVIRTUAL // Required to work in Visual Micro / Visual Studio IDE
 #define PRINT_SI7013_DATA 1
@@ -27,9 +28,9 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #define BOARD_ADAFRUIT_FEATHER_M0
 /////////////////////MOSFET//////////////////////////////
 #if defined(BOARD_ADAFRUIT_FEATHER_M0)
-  int MOS = 5 ;//gpio pin assigned ot the mosfet
+  int hibernatePin = 6 ;//gpio pin assigned ot the mosfet
 #elif defined(BOARD_ADAFRUIT_FEATHER_NRF52)
-  int MOS = 27;//gpio pin assigned ot the mosfet
+  int hibernatePin = 27;//gpio pin assigned ot the mosfet
 #endif
 
 Si7013 sensor;
@@ -43,14 +44,26 @@ int humidityMeasTime;
 int adcMeasTime;
 int startMeasTime;
 
+TwoWire* _EmotiBit_i2c = nullptr;
+
 void setup()
 {
   Serial.begin(9600);
-  pinMode(MOS,OUTPUT);
-  digitalWrite(MOS,LOW);// Switch is ON. hence, The GSR is powered
+  pinMode(hibernatePin,OUTPUT);
+  digitalWrite(hibernatePin,LOW);// Switch is ON. hence, The EmotiBit is powered
 
-  Wire.begin();  // MUST call Wire.begin() befre calling Si7013::setup()
-	sensor.setup();
+	while (!Serial.available()); // send any char over serial to continue
+
+	_EmotiBit_i2c = new TwoWire(&sercom1, 11, 13);
+	// Flush the I2C
+	_EmotiBit_i2c->begin(); // MUST call Wire.begin() befre calling Si7013::setup()
+	_EmotiBit_i2c->setClock(100000);
+	pinPeripheral(11, PIO_SERCOM);
+	pinPeripheral(13, PIO_SERCOM);
+	Serial.println("Flushing I2C....");
+	_EmotiBit_i2c->flush();
+
+	sensor.setup(*_EmotiBit_i2c);
   sensor.changeSetting(Si7013::Settings::RESOLUTION_H12_T14);
   sensor.changeSetting(Si7013::Settings::ADC_NORMAL);
   sensor.changeSetting(Si7013::Settings::VIN_UNBUFFERED);
