@@ -242,8 +242,15 @@ class Si7013 {
   /// \param	value	Value to write (see REGX_VALUE_ options)
   /// \param	mask	Mask to write/change only specific bits (see REGX_MASK_ options)
   /// \returns		true	Register write was successful
-  bool writeRegister8(uint8_t reg, uint8_t value, uint8_t mask = 0xAA, bool isOtpOperation = false);
+  
+  
+private:
+  bool _writeRegister8(uint8_t reg, uint8_t value, uint8_t mask = 0xAA, bool isOtpOperation = false);
+public:
 
+	bool writeRegister8(uint8_t reg, uint8_t value, uint8_t mask = 0xAA);
+
+	bool writeToOtp(uint8_t reg, uint8_t value, uint8_t mask = 0xFF);
 	/// \brief Reads serial number and stores It in sernum_a and sernum_b variable
 	void readSerialNumber();
 

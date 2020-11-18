@@ -180,8 +180,19 @@ int16_t Si7013::readRegister8(uint8_t reg, bool isOtpOperation) {
   }
   return ERROR_READ;
 }
-  
-bool Si7013::writeRegister8(uint8_t reg, uint8_t value, uint8_t mask, bool isOtpOperation) {
+
+
+bool Si7013::writeRegister8(uint8_t reg, uint8_t value, uint8_t mask)
+{
+	_writeRegister8(reg, value, mask, false);
+}
+
+bool Si7013::writeToOtp(uint8_t reg, uint8_t value, uint8_t mask)
+{
+	_writeRegister8(reg, value, mask, true);
+}
+
+bool Si7013::_writeRegister8(uint8_t reg, uint8_t value, uint8_t mask, bool isOtpOperation) {
 #ifdef DEBUG
   Serial.print("writeRegister8: ");
   Serial.print("reg = ");
