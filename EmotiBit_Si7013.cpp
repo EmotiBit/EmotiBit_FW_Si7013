@@ -137,7 +137,7 @@ bool Si7013::isAdcNew() {
   return _adcNew;
 }
 
-int16_t Si7013::readRegister8(uint8_t reg) {
+int16_t Si7013::readRegister8(uint8_t reg, bool isOtpOperation) {
 #ifdef DEBUG
 	Serial.print("readRegister8: ");
 	Serial.print("reg = ");
@@ -149,6 +149,10 @@ int16_t Si7013::readRegister8(uint8_t reg) {
 		while (_i2cPort->available() > 0) _i2cPort->read();	// discard any leftover data on the bus
 
     _i2cPort->beginTransmission(_address);
+	if (isOtpOperation)
+	{
+		_i2cPort->write(CMD_OTP_READ);
+	}
     _i2cPort->write(reg);
     _i2cPort->endTransmission();
 		_i2cPort->requestFrom(_address, 1);
@@ -177,7 +181,7 @@ int16_t Si7013::readRegister8(uint8_t reg) {
   return ERROR_READ;
 }
   
-bool Si7013::writeRegister8(uint8_t reg, uint8_t value, uint8_t mask) {
+bool Si7013::writeRegister8(uint8_t reg, uint8_t value, uint8_t mask, bool isOtpOperation) {
 #ifdef DEBUG
   Serial.print("writeRegister8: ");
   Serial.print("reg = ");
@@ -191,33 +195,34 @@ bool Si7013::writeRegister8(uint8_t reg, uint8_t value, uint8_t mask) {
   if (getStatus() != STATUS_IDLE) return false;
 
   // ToDo: consider whether storing register values would be substantially faster
+  if (!isOtpOperation)
+  {
+	  // Read the register to preserve reserved bits
+	  int16_t regValue;
+	  if (reg == CMD_WRITE_REGISTER_1) {
+		  regValue = readRegister8(CMD_READ_REGISTER_1);
+	  }
+	  if (reg == CMD_WRITE_REGISTER_2) {
+		  regValue = readRegister8(CMD_READ_REGISTER_2);
+	  }
+	  if (reg == CMD_WRITE_REGISTER_3) {
+		  regValue = readRegister8(CMD_READ_REGISTER_3);
+	  }
 
-  // Read the register to preserve reserved bits
-  int16_t regValue;
-  if (reg == CMD_WRITE_REGISTER_1) {
-	  regValue = readRegister8(CMD_READ_REGISTER_1);
-  }
-  if (reg == CMD_WRITE_REGISTER_2) {
-	  regValue = readRegister8(CMD_READ_REGISTER_2);
-  }
-  if (reg == CMD_WRITE_REGISTER_3) {
-	  regValue = readRegister8(CMD_READ_REGISTER_3);
-  }
+	  if (regValue < 0) return false;
 
-  if (regValue < 0) return false;
-
-  // Remove the reserved register bits from the mask
-  if (reg == CMD_WRITE_REGISTER_1) {
-	  mask = mask & ~REG1_MASK_RSVD;
+	  // Remove the reserved register bits from the mask
+	  if (reg == CMD_WRITE_REGISTER_1) {
+		  mask = mask & ~REG1_MASK_RSVD;
+	  }
+	  if (reg == CMD_WRITE_REGISTER_2) {
+		  mask = mask & ~REG2_MASK_RSVD;
+	  }
+	  if (reg == CMD_WRITE_REGISTER_3) {
+		  mask = mask & ~REG3_MASK_RSVD;
+	  }
+	  value = (((uint8_t) regValue) & ~mask) | value;
   }
-  if (reg == CMD_WRITE_REGISTER_2) {
-	  mask = mask & ~REG2_MASK_RSVD;
-  }
-  if (reg == CMD_WRITE_REGISTER_3) {
-	  mask = mask & ~REG3_MASK_RSVD;
-  }
-
-  value = (((uint8_t) regValue) & ~mask) | value;
 
 #ifdef DEBUG
   Serial.print("write val: ");
@@ -225,6 +230,10 @@ bool Si7013::writeRegister8(uint8_t reg, uint8_t value, uint8_t mask) {
 #endif
 
   _i2cPort->beginTransmission(_address);
+  if (isOtpOperation)
+  {
+	  _i2cPort->write(CMD_OTP_WRITE);
+  }
   _i2cPort->write(reg);
   _i2cPort->write(value);
   _i2cPort->endTransmission();
@@ -232,18 +241,20 @@ bool Si7013::writeRegister8(uint8_t reg, uint8_t value, uint8_t mask) {
   //if (reg == CMD_WRITE_REGISTER_1) {
 	 // _register1Value = value;
   //}
-  if (reg == CMD_WRITE_REGISTER_2) {
-	// update the status of the ADC_HOLD
-    if ((value & REG2_MASK_ADC_HOLD) == REG2_VALUE_ADC_HOLD) {
-      _adcNoHold = false;
-    }
-    if ((value & REG2_MASK_ADC_HOLD) == REG2_VALUE_ADC_NO_HOLD) {
-      _adcNoHold = true;
-    }
+  if (!isOtpOperation)
+  {
+	  if (reg == CMD_WRITE_REGISTER_2) {
+		  // update the status of the ADC_HOLD
+		  if ((value & REG2_MASK_ADC_HOLD) == REG2_VALUE_ADC_HOLD) {
+			  _adcNoHold = false;
+		  }
+		  if ((value & REG2_MASK_ADC_HOLD) == REG2_VALUE_ADC_NO_HOLD) {
+			  _adcNoHold = true;
+		  }
 
-	//_register2Value = value;
+		  //_register2Value = value;
+	  }
   }
-
   return true;
 }
 
@@ -415,8 +426,9 @@ bool Si7013::sendCommand(uint8_t cmd) {
 
 	_i2cPort->beginTransmission(_address);
 	_i2cPort->write(cmd);
-	_i2cPort->endTransmission();
-
+	if (_i2cPort->endTransmission())
+		return false;
+	
 	return true;
 }
 
