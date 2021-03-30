@@ -241,6 +241,8 @@ bool Si7013::_writeRegister8(uint8_t reg, uint8_t value, uint8_t mask, bool isOt
 #endif
 
   _i2cPort->beginTransmission(_address);
+  // ToDo: Look into modifying OTP Access sequence as 
+  // referenced in this Issue: https://github.com/EmotiBit/EmotiBit_SI7013/issues/7 
   if (isOtpOperation)
   {
 	  _i2cPort->write(CMD_OTP_WRITE);
