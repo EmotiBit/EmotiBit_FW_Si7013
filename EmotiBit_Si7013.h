@@ -88,7 +88,8 @@ class Si7013 {
   static const uint8_t CMD_READ_ELECTRONIC_ID_2ND_WORD_2 = 0xC9;
   static const uint8_t CMD_READ_FIRMWARE_VERSION_1 = 0x84;
   static const uint8_t CMD_READ_FIRMWARE_VERSION_2 = 0xB8;
-
+  static const uint8_t CMD_OTP_READ = 0x84;
+  static const uint8_t CMD_OTP_WRITE = 0xC5;
   static const int16_t ERROR_READ = -1;
   
   // Register values
@@ -234,15 +235,22 @@ class Si7013 {
   /// \param	reg			Register (see CMD_READ_ options)
   /// \returns		Returns		value of register
   /// \retval		ERROR_READ	Read was unsuccessful
-  int16_t readRegister8(uint8_t reg);
+  int16_t readRegister8(uint8_t reg, bool isOtpOperation = false);
 
   /// \brief Read the specified device register
   /// \param	reg		Register (see CMD_WRITE_ options)
   /// \param	value	Value to write (see REGX_VALUE_ options)
   /// \param	mask	Mask to write/change only specific bits (see REGX_MASK_ options)
   /// \returns		true	Register write was successful
-  bool writeRegister8(uint8_t reg, uint8_t value, uint8_t mask = 0xAA);
+  
+  
+private:
+  bool _writeRegister8(uint8_t reg, uint8_t value, uint8_t mask = 0xAA, bool isOtpOperation = false);
+public:
 
+	bool writeRegister8(uint8_t reg, uint8_t value, uint8_t mask = 0xAA);
+
+	bool writeToOtp(uint8_t reg, uint8_t value, uint8_t mask = 0xFF);
 	/// \brief Reads serial number and stores It in sernum_a and sernum_b variable
 	void readSerialNumber();
 
