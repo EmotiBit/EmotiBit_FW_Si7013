@@ -41,6 +41,11 @@ Serial.println("setup()");
   _temperatureNew = false;
   _adcNew = false;
   
+  delay(DELAY_POWER_UP);
+  _i2cPort->beginTransmission(_address);
+  if (_i2cPort->endTransmission() != 0)
+	  return false;
+
   if (getStatus() != STATUS_IDLE) return false;
 	
 	delay(((float)DELAY_POWER_UP) * _delayMultiplier);
