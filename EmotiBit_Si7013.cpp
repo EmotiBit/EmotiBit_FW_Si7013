@@ -39,13 +39,11 @@ Serial.println("setup()");
   _address = address;
   _humidityNew = false;
   _temperatureNew = false;
-  _adcNew = false;
-  
+  _adcNew = false; 
   delay(DELAY_POWER_UP);
   _i2cPort->beginTransmission(_address);
   if (_i2cPort->endTransmission() != 0)
 	  return false;
-
   if (getStatus() != STATUS_IDLE) return false;
 	
 	delay(((float)DELAY_POWER_UP) * _delayMultiplier);
@@ -160,7 +158,7 @@ int16_t Si7013::readRegister8(uint8_t reg, bool isOtpOperation) {
 	}
     _i2cPort->write(reg);
     _i2cPort->endTransmission();
-		_i2cPort->requestFrom(_address, 1);
+		_i2cPort->requestFrom((uint8_t)_address, (uint8_t)1);
     uint32_t start = millis(); // start timeout
     while(millis()-start < _transactionTimeout) {
 			if (_i2cPort->available() == 1) {
@@ -481,7 +479,7 @@ float Si7013::getHumidity() {
 #endif // DEBUG
 	if (getStatus() == STATUS_IDLE) {
 		while (_i2cPort->available() > 0) _i2cPort->read();	// discard any leftover data on the bus
-		_i2cPort->requestFrom(_address, 3);
+		_i2cPort->requestFrom((uint8_t)_address, (uint8_t)3);
 		uint32_t start = millis(); // start timeout
 		while (millis() - start < _transactionTimeout) {
 			if (_i2cPort->available() == 3) {
@@ -523,7 +521,7 @@ float Si7013::getTemperature() {
 #endif // DEBUG
 	if (getStatus() == STATUS_IDLE) {
 		while (_i2cPort->available() > 0) _i2cPort->read();	// discard any leftover data on the bus
-		_i2cPort->requestFrom(_address, 2);
+		_i2cPort->requestFrom((uint8_t)_address, (uint8_t)2);
 		uint32_t start = millis(); // start timeout
 		while (millis() - start < _transactionTimeout) {
 			if (_i2cPort->available() == 2) {
@@ -552,7 +550,7 @@ float Si7013::getAdc() {
 		while (_i2cPort->available() > 0) _i2cPort->read();	// discard any leftover data on the bus
 
 		uint32_t start = millis(); // start timeout
-		_i2cPort->requestFrom(_address, 2);
+		_i2cPort->requestFrom((uint8_t)_address, (uint8_t)2);
 		while (millis() - start < _transactionTimeout) {
 			if (_i2cPort->available() == 2) {
 				uint16_t analog = _i2cPort->read() << 8 | _i2cPort->read();
@@ -586,7 +584,7 @@ void Si7013::readSerialNumber() {
 	bool gotData = false;
 	uint32_t start = millis(); // start timeout
 	while (millis() - start < _transactionTimeout) {
-		if (_i2cPort->requestFrom(_address, 8) == 8) {
+		if (_i2cPort->requestFrom((uint8_t)_address, (uint8_t)8) == 8) {
 			gotData = true;
 			break;
 		}
@@ -615,7 +613,7 @@ void Si7013::readSerialNumber() {
 	gotData = false;
 	start = millis(); // start timeout
 	while (millis() - start < _transactionTimeout) {
-		if (_i2cPort->requestFrom(_address, 8) == 8) {
+		if (_i2cPort->requestFrom((uint8_t)_address, (uint8_t)8) == 8) {
 			gotData = true;
 			break;
 		}
